@@ -1,6 +1,6 @@
 const database = require('./database.js');
 
-const express = require('express')
+const express = require('express');
 
 // bodyParser to make data in request body easily available
 const bodyParser = require('body-parser');
@@ -10,6 +10,9 @@ const app = express();
 
 // connect to MongoDB
 database.connect();
+
+// Recipe
+const Recipe = require('./models/recipe');
 
 // add header for CORS handling
 app.use((req, res, next) => {
@@ -22,33 +25,97 @@ app.use((req, res, next) => {
 // JSON body parser middleware
 app.use(bodyParser.json());
 
-// items POST middleware
-app.post('/api/stuff', (req, res, next) => {
-    console.log(req.body);
-    res.status(201).json(req.body);
+// Recipes POST middleware
+app.post('/api/recipes', (req, res, next) => {
+    const body = req.body;
+    const recipe = new Recipe({
+        title: body.title,
+        ingredients: body.ingredients,
+        instructions: body.instructions,
+        difficulty: body.difficulty,
+        time: body.time
+    });
+    Recipe.save().then(
+        () => {
+            res.status(201).json(recipe)
+        }).catch(
+        (error) => {
+            res.status(400).json({
+                error: 'You have error! : ' + error
+            })
+        }
+    )
 });
 
-// items GET middleware
-app.use('/api/stuff', (req, res, next) => {
-    const stuff = [
-        {
-            _id: 'strdfbdfbing',
-            title: 'First Item',
-            description: 'dfgdfhbfd',
-            imageUrl: 'http://www.lovethispic.com/uploaded_images/247646-Sleepy-Cat.jpg',
-            price: 4900,
-            userId: 'hgf,nhgf,'
-        },
-        {
-            _id: 'aa',
-            title: 'Second Item',
-            description: 'eee',
-            imageUrl: 'https://catadoptionteam.org/wp-content/uploads/2019/05/Transparent-OrangeWhiteCat-764x1024.png',
-            price: 29,
-            userId: 'fhgj,n1,'
+// Recipes GET middleware
+app.get('/api/recipes', (req, res, next) => {
+    Recipe.find().then(
+        (recipes) => {
+            res.status(200).json(recipes);
         }
-    ];
-    res.status(200).json(stuff);
+    ).catch(
+        (error) => {
+            res.status(400).json({
+                error: 'You have an error! ' + error
+            })
+        }
+    )
+});
+
+// single recipe GET middleware
+app.get('/api/recipes/:id', (req, res, next) => {
+    const id = req.params.id;
+    Recipe.findOne({
+        _id: id
+    }).then(
+        (recipe) => {
+            res.status(200).json(recipe)
+        }
+    ).catch(
+        (error) => {
+            res.status(404).json({
+                error: 'Error! recipe not found: ' + error
+            })
+        }
+    )
+});
+
+// update recipe middleware
+app.put('/api/recipes/:id', (req, res, next) => {
+    const id = req.params.id;
+    const body = req.body;
+    const recipe = new Recipe({
+        _id: id,
+        title: body.title,
+        ingredients: body.ingredients,
+        instructions: body.instructions,
+        difficulty: body.difficulty,
+        time: body.time
+    });
+    Recipe.updateOne({_id: id}, recipe).then(
+        () => {
+            res.status(201).json(recipe)
+        }
+    ).catch(
+        (error) => {
+            res.status(400).json({
+                error: 'You have an error! : ' + error
+            })
+        }
+    )
+});
+
+// delete recipe middleware (ASYnc await)
+app.delete('/api/recipes/:id', async (req, res, next) => {
+    const id = req.params.id;
+    try {
+        await Recipe.deleteOne({_id: id});
+        res.status(204).json({message: 'Recipe deleted successfully !'})
+    } catch (e) {
+        res.status(400).json({
+            error: 'You have an error! ' + e
+        })
+    }
 });
 
 module.exports = app;
