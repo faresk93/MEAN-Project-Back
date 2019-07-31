@@ -4,6 +4,8 @@ const express = require('express');
 
 // recipe routes
 const recipeRoutes = require('./routes/recipe');
+// user routes
+const userRoutes = require('./routes/user');
 
 // bodyParser to make data in request body easily available
 const bodyParser = require('body-parser');
@@ -25,6 +27,8 @@ app.use((req, res, next) => {
 // JSON body parser middleware
 app.use(bodyParser.json());
 
+// Routes implementation
 app.use('/api/recipes', recipeRoutes);
+app.use('/api/auth', userRoutes);
 
 module.exports = app;
