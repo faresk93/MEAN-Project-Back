@@ -1,5 +1,16 @@
 const User = require('../models/user');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+const generateRandomString = (length) => {
+    let result = '';
+    let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let charactersLength = characters.length;
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+};
 
 exports.signup = async (req, res, next) => {
     const body = req.body;
@@ -18,9 +29,46 @@ exports.signup = async (req, res, next) => {
             })
         }
     } catch (e) {
-
+        return res.status(500).json({
+            error: new Error('Error signing up.\n' + e)
+        })
     }
 };
-exports.login = (req, res, next) => {
+exports.login = async (req, res, next) => {
+    const body = req.body;
+    try {
+        const user = await User.findOne({email: body.email});
+        if (!user) {
+            return res.status(401).json({
+                error: new Error('User not found')
+            })
+        }
+        try {
+            const valid = await bcrypt.compare(body.password, user.password);
+            if (!valid) {
+                return res.status(401).json({
+                    error: 'Invalid credentials'
+                })
+            }
+            // token configuration
+            const token = jwt.sign(
+                {userId: user._id},
+                generateRandomString(20),
+                {expiresIn: '24h'}
+            );
+            res.status(200).json({
+                userId: user._id,
+                token: token
+            });
+        } catch (e) {
+            return res.status(500).json({
+                error: 'Invalid credentials!'
+            })
+        }
 
+    } catch (e) {
+        return res.status(500).json({
+            error: new Error('Error logging in.\n' + e)
+        })
+    }
 };
