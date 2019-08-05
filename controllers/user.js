@@ -11,6 +11,11 @@ const generateRandomString = (length) => {
     }
     return result;
 };
+const randomString = generateRandomString(20);
+
+exports.getRandomString = () => {
+    return randomString;
+};
 
 exports.signup = async (req, res, next) => {
     const body = req.body;
@@ -53,7 +58,7 @@ exports.login = async (req, res, next) => {
             // token configuration
             const token = jwt.sign(
                 {userId: user._id},
-                generateRandomString(20),
+                'test',
                 {expiresIn: '24h'}
             );
             res.status(200).json({
